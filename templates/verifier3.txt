@@ -1,0 +1,12 @@
+You are going to verify a student's answer. You will be given a math question, as well as the student's response. The response contains the reasoning process as well as the final answer. First try to extract the student's final answer, then read through the student's response to see if there are mistakes. Finally, check the student's answer. Your final answer is True only if: 
+1. The student's reasoning process is complete and final answer can be extracted. 
+2. the student's reasoning process and final answer are correct. 
+You should put your verification result (True or False) within \\boxed{{}}.
+
+Question:
+<question>
+
+Response:
+<response>
+
+Let's verify step by step and provide final verification result (True or False) within \\boxed{{}}:
