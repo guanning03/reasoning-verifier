@@ -21,7 +21,10 @@ CUDA_VISIBLE_DEVICES=2 python evaluate_generator.py --model_path="./models/Qwen2
 CUDA_VISIBLE_DEVICES=3 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH-500" --tok_limit=4096 --split=test --test_n=1 --template="templates/Qwen_MATH_4shot.txt" --post_truncate
 '''
 '''
-CUDA_VISIBLE_DEVICES=7 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH-500" --tok_limit=4096 --split=test --test_n=64 --template="templates/Qwen_MATH_0shot.txt"
+CUDA_VISIBLE_DEVICES=7 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH-500" --tok_limit=4096 --split=test --test_n=256 --template="templates/Qwen_MATH_0shot.txt"
+CUDA_VISIBLE_DEVICES=6 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH-500" --tok_limit=4095 --split=test --test_n=256 --template="templates/Qwen_MATH_0shot.txt"
+CUDA_VISIBLE_DEVICES=5 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH-500" --tok_limit=4094 --split=test --test_n=256 --template="templates/Qwen_MATH_0shot.txt"
+CUDA_VISIBLE_DEVICES=4 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH-500" --tok_limit=4093 --split=test --test_n=256 --template="templates/Qwen_MATH_0shot.txt"
 '''
 
 parser = argparse.ArgumentParser()

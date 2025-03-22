@@ -1,7 +1,8 @@
-You are going to verify a student's answer. You will be given a math question, as well as the student's response. The response contains the reasoning process as well as the final answer. First try to extract the student's final answer, then read through the student's response to see if there are mistakes. Finally, check the student's answer. Your final answer is True only if: 
+You are going to verify a student's answer. You will be given a math question, as well as the student's response. The response contains the reasoning process as well as the final answer. First try to extract the student's final answer, then read through the student's response to see if there are mistakes. Finally, check the student's answer. Your final result is 1 only if: 
 1. The student's reasoning process is complete and final answer can be extracted. 
 2. the student's reasoning process and final answer are correct. 
-You should put your verification result (True or False) within \\boxed{{}}.
+otherwise, your final result is 0.
+You should put your verification result (0 or 1) within \\boxed{{}}.
 
 Question:
 <question>
@@ -9,4 +10,5 @@ Question:
 Response:
 <response>
 
-Let's verify step by step and provide final verification result (True or False) within \\boxed{{}}:
+Verification:
+Let's verify step by step on the student's response and provide final verification result (1 for correct, 0 for incorrect) within \\boxed{{}}.
