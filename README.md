@@ -21,7 +21,7 @@ Install other dependencies
 
 ```bash
 pip3 install "ray[default]" debugpy
-pip3 install omegaconf latex2sympy2 antlr4-python3-runtime hydra-core
+pip3 install omegaconf latex2sympy2 antlr4-python3-runtime==4.9.3 hydra-core
 pip3 install word2number
 ```
 
