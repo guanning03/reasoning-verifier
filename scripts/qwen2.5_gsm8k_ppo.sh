@@ -1,23 +1,23 @@
 echo "Job started on `hostname` at `date`"
 
 ray stop
-ray start --head
+
 export CUDA_VISIBLE_DEVICES='3'
 export WANDB_MODE='disabled'
 
 ACTOR_PRETRAINED_MODEL=./models/Qwen2.5-Math-1.5B-Instruct
 CRITIC_PRETRAINED_MODEL=./models/Qwen2.5-Math-1.5B-Instruct
-TRAIN_DATA=./data/gsm8k/train.parquet
-VAL_DATA=./data/gsm8k/test.parquet
-WANDB_PROJECT_NAME=qwen2.5-gsm8k-ppo
-WANDB_RUN_NAME=qwen2.5-demo
+TRAIN_DATA=./benchmarks/gsm8k/train.parquet
+VAL_DATA=./benchmarks/gsm8k/test.parquet
+WANDB_PROJECT_NAME=generator-verl
+WANDB_RUN_NAME=qwen2.5-gsm8k-ppo
 
 PYTHONUNBUFFERED=1 python -m verl.trainer.main_ppo \
  data.train_files=$TRAIN_DATA \
  data.val_files=$VAL_DATA \
  data.train_batch_size=256 \
- data.max_prompt_length=2048 \
- data.max_response_length=2048 \
+ data.max_prompt_length=1024 \
+ data.max_response_length=1024 \
  actor_rollout_ref.model.path=$ACTOR_PRETRAINED_MODEL \
  actor_rollout_ref.actor.optim.lr=1e-6 \
  actor_rollout_ref.actor.ppo_mini_batch_size=64 \
@@ -39,4 +39,5 @@ PYTHONUNBUFFERED=1 python -m verl.trainer.main_ppo \
  trainer.nnodes=1 \
  trainer.save_freq=10 \
  trainer.test_freq=10 \
+ trainer.max_num_checkpoint=1 \
  trainer.total_epochs=15 2>&1 | tee verl_demo.log \

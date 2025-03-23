@@ -605,9 +605,12 @@ class RayPPOTrainer(object):
 
         # create critic
         if self.use_critic:
+            print(f'create critic')
             resource_pool = self.resource_pool_manager.get_resource_pool(Role.Critic)
             critic_cls = RayClassWithInitArgs(cls=self.role_worker_mapping[Role.Critic], config=self.config.critic)
             self.resource_pool_to_cls[resource_pool]['critic'] = critic_cls
+        else:
+            print(f'no critic')
 
         # create reference policy if needed
         if self.use_reference_policy:
@@ -655,6 +658,7 @@ class RayPPOTrainer(object):
         self.actor_rollout_wg.init_model()
 
     def _save_checkpoint(self):
+        """Save checkpoint and manage the number of checkpoints to keep"""
         # path: given_path + `/global_step_{global_steps}` + `/actor`
         local_global_step_folder = os.path.join(self.config.trainer.default_local_dir,
                                                 f'global_step_{self.global_steps}')
@@ -662,6 +666,8 @@ class RayPPOTrainer(object):
 
         actor_remote_path = None if self.config.trainer.default_hdfs_dir is None else os.path.join(
             self.config.trainer.default_hdfs_dir, f'global_step_{self.global_steps}', 'actor')
+        
+        # Save current checkpoint
         self.actor_rollout_wg.save_checkpoint(actor_local_path,
                                               actor_remote_path,
                                               self.global_steps,
@@ -676,16 +682,38 @@ class RayPPOTrainer(object):
                                            self.global_steps,
                                            remove_previous_ckpt=self.config.trainer.remove_previous_ckpt_in_save)
 
-        # save dataloader
+        # Save dataloader state
         dataloader_local_path = os.path.join(local_global_step_folder, 'data.pt')
         dataloader_state_dict = self.train_dataloader.state_dict()
         torch.save(dataloader_state_dict, dataloader_local_path)
 
-        # latest checkpointed iteration tracker (for atomic usage)
+        # Update latest checkpointed iteration tracker
         local_latest_checkpointed_iteration = os.path.join(self.config.trainer.default_local_dir,
                                                            'latest_checkpointed_iteration.txt')
         with open(local_latest_checkpointed_iteration, 'w') as f:
             f.write(str(self.global_steps))
+
+        # Manage number of checkpoints to keep
+        max_ckpt_to_keep = self.config.trainer.get('max_ckpt_to_keep', 5)  
+        if max_ckpt_to_keep > 0:
+            # Get all checkpoint folders
+            ckpt_folders = []
+            for item in os.listdir(self.config.trainer.default_local_dir):
+                if item.startswith('global_step_'):
+                    try:
+                        step = int(item.split('global_step_')[-1])
+                        ckpt_folders.append((step, os.path.join(self.config.trainer.default_local_dir, item)))
+                    except ValueError:
+                        continue
+            
+            # Sort by step number (newest first)
+            ckpt_folders.sort(reverse=True)
+            
+            # Remove old checkpoints
+            for _, folder_path in ckpt_folders[max_ckpt_to_keep:]:
+                import shutil
+                shutil.rmtree(folder_path)
+                print(f"Removed old checkpoint: {folder_path}")
 
     def _load_checkpoint(self):
         if self.config.trainer.resume_mode == 'disable':
@@ -871,7 +899,7 @@ class RayPPOTrainer(object):
                             reward_tensor = self.rm_wg.compute_rm_score(batch)
                             batch = batch.union(reward_tensor)
                         
-                        breakpoint()
+                        # breakpoint()
                         print('not using reward model, rule instead')
                         # we combine with rule-based rm
                         reward_tensor = self.reward_fn(batch)

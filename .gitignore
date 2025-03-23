@@ -10,3 +10,4 @@ wandb/
 checkpoints/
 *.log
 .vscode/settings.json
+logs/
