@@ -25,5 +25,28 @@ pip3 install omegaconf latex2sympy2 antlr4-python3-runtime==4.9.3 hydra-core
 pip3 install word2number
 ```
 
+### How to Train Generator
+
+Download training data:
+
+```bash
+python benchmarks/download_benchmark.py
+```
+
+Download base model:
+
+```bash
+python models/download_model.py
+```
+
+Training `Qwen/Qwen2-0.5B-Instruct` on `gsm8k` with GRPO:
+
+```bash
+bash scripts/qwen2.5-0.5b_gsm8k_grpo.sh
+```
+
+### How to Train Verifier
+
+TODO
 
 
