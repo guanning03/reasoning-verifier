@@ -5,13 +5,13 @@ from antlr4 import InputStream, CommonTokenStream
 from antlr4.error.ErrorListener import ErrorListener
 
 try:
-    from gen.PSParser import PSParser
+    from utils.latex2sympy.gen.PSParser import PSParser
     from gen.PSLexer import PSLexer
     from gen.PSListener import PSListener
 except Exception:
-    from .gen.PSParser import PSParser
-    from .gen.PSLexer import PSLexer
-    from .gen.PSListener import PSListener
+    from utils.latex2sympy.gen.PSParser import PSParser
+    from gen.PSLexer import PSLexer
+    from gen.PSListener import PSListener
 
 from sympy.printing.str import StrPrinter
 

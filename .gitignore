@@ -1,6 +1,12 @@
 models/*/
 benchmarks/*/
+data/*/
 evaluations/
 **/__pycache__/
 __pycache__/
 *.egg-info/
+outputs/
+wandb/
+checkpoints/
+*.log
+.vscode/settings.json

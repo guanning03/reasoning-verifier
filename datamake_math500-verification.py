@@ -7,16 +7,12 @@ def read_template(template_path):
         return f.read()
 
 def create_content_to_verify(problem, response, template):
-    # 替换模板中的占位符
     content = template.replace('<question>', problem)
     content = content.replace('<response>', response)
     return content
 
 def process_math500_data(json_path, template_path):
-    # 读取模板
     template = read_template(template_path)
-    
-    # 读取JSON数据
     with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
     
@@ -57,18 +53,15 @@ def main():
     template_path = 'templates/verifier3.txt'
 
     dataset = process_math500_data(json_path, template_path)
-    
-    # 打印数据集基本信息
+
     print("\n=== Dataset Information ===")
     print(f"Dataset size: {len(dataset)}")
     print("\nDataset features:", dataset.features)
     print("\nFirst example:")
     print(json.dumps(dataset[0], indent=2, ensure_ascii=False))
-    
-    # 保存到本地
+
     dataset.save_to_disk('./benchmarks/math500-verification')
-    
-    # 上传到 Hugging Face Hub
+
     dataset.push_to_hub(
         "guanning/math500-verification",  
         private=False 

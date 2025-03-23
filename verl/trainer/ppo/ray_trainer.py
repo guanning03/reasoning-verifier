@@ -43,8 +43,11 @@ from verl.utils.tracking import ValidationGenerationsLogger
 from torch.utils.data import RandomSampler, SequentialSampler
 from torchdata.stateful_dataloader import StatefulDataLoader
 
-WorkerType = Type[Worker]
+ray.init(runtime_env={
+    "env_vars": {"RAY_DEBUG": "1"}, 
+})
 
+WorkerType = Type[Worker]
 
 class Role(Enum):
     """
@@ -790,6 +793,8 @@ class RayPPOTrainer(object):
         self.global_steps += 1
         last_val_metrics = None
 
+        breakpoint()
+        
         for epoch in range(self.config.trainer.total_epochs):
             for batch_dict in self.train_dataloader:
                 metrics = {}
