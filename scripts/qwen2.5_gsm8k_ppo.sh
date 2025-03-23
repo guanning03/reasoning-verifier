@@ -1,6 +1,7 @@
 echo "Job started on `hostname` at `date`"
 
 ray stop
+ray start --head
 export CUDA_VISIBLE_DEVICES='3'
 export WANDB_MODE='disabled'
 
@@ -15,8 +16,8 @@ PYTHONUNBUFFERED=1 python -m verl.trainer.main_ppo \
  data.train_files=$TRAIN_DATA \
  data.val_files=$VAL_DATA \
  data.train_batch_size=256 \
- data.max_prompt_length=512 \
- data.max_response_length=256 \
+ data.max_prompt_length=2048 \
+ data.max_response_length=2048 \
  actor_rollout_ref.model.path=$ACTOR_PRETRAINED_MODEL \
  actor_rollout_ref.actor.optim.lr=1e-6 \
  actor_rollout_ref.actor.ppo_mini_batch_size=64 \

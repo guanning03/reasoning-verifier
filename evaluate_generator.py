@@ -1,3 +1,6 @@
+# Evaluate LLM's ability as Generator
+# Also Used for Creating Response Dataset 
+
 import os, time
 import json
 from vllm import LLM, SamplingParams
@@ -75,7 +78,7 @@ elif dataset_short_name == 'gsm8k':
     TEST_N = 1
     MAX_TOKENS = tok_limit
     TEST_TEMPERATURE = 0.0
-    MAX_TEST_SAMPLES = 7500
+    MAX_TEST_SAMPLES = 7473
 elif dataset_short_name == 'AIME_2024':
     dataset = load_from_disk(dataset_name)
     print("\nDataset columns:", dataset['train'].column_names) 
@@ -115,8 +118,9 @@ def post_truncate(response):
     return response
 
 def get_scores(ds, outputs, tokenizer_encode, save_file_name=None):
-    predictions, golds = [], []
     results = []
+    tot_tokens = 0
+    tot_pass_rate = 0
     for input, output in tqdm(zip(ds, outputs), total=len(ds), desc='Analysed responses'):
         gold = RESPONSE_EXTRACTOR[dataset_short_name](input[ANSWER_KEY])
         if args.post_truncate:
@@ -127,24 +131,27 @@ def get_scores(ds, outputs, tokenizer_encode, save_file_name=None):
             RESPONSE_EXTRACTOR[dataset_short_name](truncated_resp)
             for truncated_resp in truncated_responses
         ]
-        predictions.append(prediction)
-        golds.append(gold)
-        results.append(
-            {
-                QUESTION_KEY: input[QUESTION_KEY],
-                ANSWER_KEY: input[ANSWER_KEY],
-                "responses": truncated_responses,  
-                "prediction": prediction,
-                "gold": gold,
-                "tokens": sum([len(tokenizer_encode(truncated_resp)) for truncated_resp in truncated_responses]) / len(truncated_responses),
-                "accuracy": [eq(gold, pred) for pred in prediction],
-            }
-        )
+        result = {
+            QUESTION_KEY: input[QUESTION_KEY],
+            ANSWER_KEY: input[ANSWER_KEY],
+            "responses": truncated_responses,  
+            "prediction": prediction,
+            "gold": gold,
+            "tokens": sum([len(tokenizer_encode(truncated_resp)) for truncated_resp in truncated_responses]) / len(truncated_responses),
+            "accuracy": [eq(gold, pred) for pred in prediction],
+        }
+        results.append(result)
+        tot_tokens += result['tokens']
+        tot_pass_rate += sum(result['accuracy']) / len(result['accuracy'])
+        
     if save_file_name is not None:
         with open(save_file_name, 'w') as f:
             json.dump(results, f, indent=4)
     
-    return {} # TODO: add various metrics when required
+    return {
+        'avg_tokens': tot_tokens / len(results),
+        'avg_pass_rate': tot_pass_rate / len(results),
+    } # TODO: add various metrics when required
 
 def evaluate_model():
     test_prompts = []

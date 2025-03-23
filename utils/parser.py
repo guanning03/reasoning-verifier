@@ -719,22 +719,22 @@ def parse_question(example, data_name):
     return question.strip()
 
 
-def run_execute(executor, result, prompt_type, data_name, execute=False):
-    if not result or result == "error":
-        return None, None
-    report = None
+# def run_execute(executor, result, prompt_type, data_name, execute=False):
+#     if not result or result == "error":
+#         return None, None
+#     report = None
 
-    if "program_only" in prompt_type:
-        prediction = extract_program_output(result)
-    elif prompt_type in ["pot", "pal"] and execute:
-        code = extract_program(result)
-        prediction, report = executor.apply(code)
-    else:
-        prediction = extract_answer(result, data_name)
+#     if "program_only" in prompt_type:
+#         prediction = extract_program_output(result)
+#     elif prompt_type in ["pot", "pal"] and execute:
+#         code = extract_program(result)
+#         prediction, report = executor.apply(code)
+#     else:
+#         prediction = extract_answer(result, data_name)
 
-    # prediction = strip_string(prediction, skip_unit=data_name == "carp_en")
-    prediction = strip_string(prediction, skip_unit=data_name in STRIP_EXCEPTIONS)
-    return prediction, report
+#     # prediction = strip_string(prediction, skip_unit=data_name == "carp_en")
+#     prediction = strip_string(prediction, skip_unit=data_name in STRIP_EXCEPTIONS)
+#     return prediction, report
 
 
 def _test_extract_answer():

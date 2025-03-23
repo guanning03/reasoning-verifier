@@ -43,10 +43,6 @@ from verl.utils.tracking import ValidationGenerationsLogger
 from torch.utils.data import RandomSampler, SequentialSampler
 from torchdata.stateful_dataloader import StatefulDataLoader
 
-ray.init(runtime_env={
-    "env_vars": {"RAY_DEBUG": "1"}, 
-})
-
 WorkerType = Type[Worker]
 
 class Role(Enum):
@@ -792,9 +788,7 @@ class RayPPOTrainer(object):
         # we start from step 1
         self.global_steps += 1
         last_val_metrics = None
-
-        breakpoint()
-        
+  
         for epoch in range(self.config.trainer.total_epochs):
             for batch_dict in self.train_dataloader:
                 metrics = {}
@@ -871,13 +865,14 @@ class RayPPOTrainer(object):
 
                     with _timer('adv', timing_raw):
                         # compute scores. Support both model and function-based.
-                        # We first compute the scores using reward model. Then, we call reward_fn to combine
-                        # the results from reward model and rule-based results.
+                        # We first compute the scores using reward model. Then, we call reward_fn to combinea                        # the results from reward model and rule-based results.
                         if self.use_rm:
                             # we first compute reward model score
                             reward_tensor = self.rm_wg.compute_rm_score(batch)
                             batch = batch.union(reward_tensor)
-
+                        
+                        breakpoint()
+                        print('not using reward model, rule instead')
                         # we combine with rule-based rm
                         reward_tensor = self.reward_fn(batch)
                         batch.batch['token_level_scores'] = reward_tensor

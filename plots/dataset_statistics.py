@@ -2,12 +2,18 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 
-with open("evaluations/outputs_MATH-500_Qwen2.5-Math-1.5B_Qwen_MATH_0shot_0.6_4096.json", "r") as f:
+with open("evaluations/MATH500_responses.json", "r") as f:
     data = json.load(f)
 
 correct_list = []
+tokens_list = []  # 新增tokens列表
 for item in data:
     correct_list.append(item['accuracy'].count(True))
+    tokens_list.append(item['tokens'])  # 收集所有tokens值
+
+# 计算tokens的平均值
+avg_tokens = sum(tokens_list) / len(tokens_list)
+print(f"Average tokens: {avg_tokens:.2f}")
 
 # 设置中文字体显示
 plt.rcParams['font.sans-serif'] = ['SimHei']

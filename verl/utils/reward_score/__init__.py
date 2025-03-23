@@ -16,8 +16,12 @@
 
 def _default_compute_score(data_source, solution_str, ground_truth, extra_info=None):
     if data_source == 'openai/gsm8k':
-        from . import gsm8k
-        res = gsm8k.compute_score(solution_str, ground_truth)
+        # from . import gsm8k
+        # res = gsm8k.compute_score(solution_str, ground_truth)
+        from utils.parser import extract_answer
+        from utils.grader import math_equal
+        res = math_equal(prediction = extract_answer(solution_str, data_name='math'), 
+                         reference = ground_truth)
     elif data_source in ['lighteval/MATH', 'DigitalLearningGmbH/MATH-lighteval']:
         # from . import math
         # res = math.compute_score(solution_str, ground_truth)
@@ -37,6 +41,11 @@ def _default_compute_score(data_source, solution_str, ground_truth, extra_info=N
     elif data_source in ['hiyouga/geometry3k']:
         from . import geo3k
         res = geo3k.compute_score(solution_str, ground_truth)
+    elif data_source.endswith('verification'):
+        from utils.parser import extract_answer
+        from utils.grader import math_equal
+        res = math_equal(prediction = extract_answer(solution_str, data_name='math'), 
+                         reference = ground_truth)
     else:
         raise NotImplementedError
 

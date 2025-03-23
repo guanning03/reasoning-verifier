@@ -1,3 +1,6 @@
+# Creating Verifier Training Dataset
+# From Generator Evaluation (json) to Huggingface (arrow)
+
 import json
 from datasets import Dataset
 import os

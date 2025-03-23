@@ -58,6 +58,7 @@ def main(config):
         # this is for local ray cluster
         ray.init(runtime_env={
             'env_vars': {
+                'RAY_DEBUG': '1',
                 'TOKENIZERS_PARALLELISM': 'true',
                 'NCCL_DEBUG': 'WARN',
                 'VLLM_LOGGING_LEVEL': 'WARN'

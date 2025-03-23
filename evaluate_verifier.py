@@ -1,3 +1,5 @@
+# Evaluate LLM's ability as a Verifier
+
 import os, time
 import json
 from vllm import LLM, SamplingParams
