@@ -195,6 +195,7 @@ print("This is not a checkpoint, will evaluate directly...")
 scores = evaluate_model()
 results[model_path] = scores
 
-with open(f'evaluations/results_{dataset_short_name}_{extract_model_shortname(model_path)}_{template_short_name}_{TEST_TEMPERATURE}_{tok_limit}.json', 'w') as f:
-    print('Saving results to', f'evaluations/results_{dataset_short_name}_{extract_model_shortname(model_path)}_{template_short_name}_{TEST_TEMPERATURE}_{tok_limit}.json ...')
+result_file = f'evaluations/verifier_results_{dataset_short_name}_{extract_model_shortname(model_path)}_{template_short_name}_{TEST_TEMPERATURE}_{tok_limit}.json'
+with open(result_file, 'w') as f:
+    print('Saving results to', result_file)
     json.dump(results, f, indent=4)

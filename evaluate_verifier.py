@@ -15,29 +15,17 @@ os.makedirs('evaluations', exist_ok=True)
 
 # Examples 
 '''
-CUDA_VISIBLE_DEVICES=1 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/gsm8k" --tok_limit=4096 --split=test --test_n=1 --template="templates/Qwen_gsm8k_8shot.txt" --post_truncate
-CUDA_VISIBLE_DEVICES=1 python evaluate_generator.py --model_path="models/Qwen2.5-Math-1.5B-Instruct" --dataset="./benchmarks/gsm8k" --tok_limit=4096 --split=test --test_n=1 --template="templates/Qwen_gsm8k_CoT_0shot.txt" --post_truncate
-CUDA_VISIBLE_DEVICES=1 python evaluate_generator.py --model_path="checkpoints/qwen2.5-gsm8k-ppo/qwen2.5-gsm8k-ppo-0.5b-0shot-0.001kl-256bs-512ml-256rl-1e-6lr-1e-5cr/global_step_435/actor/huggingface" --dataset="./benchmarks/gsm8k" --tok_limit=4096 --split=test --test_n=1 --template="templates/Qwen_gsm8k_CoT_0shot.txt" --post_truncate
-'''
-'''
-CUDA_VISIBLE_DEVICES=2 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/competition_math" --tok_limit=4096 --split=train --test_n=1 --template="templates/Qwen_MATH_4shot.txt" --post_truncate
-'''
-'''
-CUDA_VISIBLE_DEVICES=0 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH-500" --tok_limit=4096 --split=test --test_n=1 --template="templates/Qwen_MATH_4shot.txt" --post_truncate
-'''
-'''
-CUDA_VISIBLE_DEVICES=7 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH-500" --tok_limit=4096 --split=test --test_n=256 --template="templates/Qwen_MATH_0shot.txt"
+CUDA_VISIBLE_DEVICES=1 python evaluate_verifier.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/math500-verification" --tok_limit=4096 --split=train --test_n=1 
 '''
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model_path', type=str, default='Qwen/Qwen2.5-Math-1.5B')
-parser.add_argument('--dataset', type=str, default='openai/gsm8k')
+parser.add_argument('--dataset', type=str, default='guanning/math500-verification')
 parser.add_argument('--tok_limit', type=int, default=4096)
 parser.add_argument('--split', type=str, default='test')
 parser.add_argument('--temperature', type=float, default=None)
 parser.add_argument('--test_n', type=int, default=None)
-parser.add_argument('--template', type=str, default='templates/Qwen_gsm8k_8shot.txt')
-parser.add_argument('--post_truncate', action='store_true', default=False)
+
 args = parser.parse_args()
 os.environ['TOKENIZERS_PARALLELISM'] = "false"
 
@@ -47,12 +35,7 @@ tok_limit = args.tok_limit
 split = args.split
 dataset_name = args.dataset
 dataset_short_name = dataset_name.split('/')[-1]
-template = args.template
-template_short_name = template.split('/')[-1].split('.')[0]
 results = {}
-
-with open(template, 'r', encoding='utf-8') as f:
-    template = f.read()
 
 print("Dataset:", dataset_short_name, "\nModel:", model_path)
 
@@ -60,44 +43,14 @@ QUESTION_KEY = DATASET_KEYS[dataset_short_name]["question"]
 ANSWER_KEY = DATASET_KEYS[dataset_short_name]["answer"]
 eq = RESPONSE_COMPARATOR[dataset_short_name]
 
-if dataset_short_name == 'converted_aime_dataset':
+if dataset_short_name == 'math500-verification':
     dataset = load_from_disk(dataset_name)
-    TEST_N = 10
-    MAX_TOKENS = tok_limit
-    TEST_TEMPERATURE = 0.6
-    MAX_TEST_SAMPLES = 100
-elif dataset_short_name in ['MATH500', 'MATH-500']:
-    dataset = load_from_disk(dataset_name)
-    TEST_N = 3
-    MAX_TOKENS = tok_limit
-    TEST_TEMPERATURE = 0.6
-    MAX_TEST_SAMPLES = 500
-elif dataset_short_name == 'gsm8k':
-    dataset = load_from_disk(dataset_name, 'main')
     TEST_N = 1
     MAX_TOKENS = tok_limit
     TEST_TEMPERATURE = 0.0
-    MAX_TEST_SAMPLES = 7473
-elif dataset_short_name == 'AIME_2024':
-    dataset = load_from_disk(dataset_name)
-    print("\nDataset columns:", dataset['train'].column_names) 
-    TEST_N = 5
-    MAX_TOKENS = tok_limit
-    TEST_TEMPERATURE = 0.6
-    MAX_TEST_SAMPLES = 30
-elif dataset_short_name == 'AIME2025':
-    dataset = load_from_disk(dataset_name)
-    print("\nDataset columns:", dataset['train'].column_names)  
-    TEST_N = 5
-    MAX_TOKENS = tok_limit
-    TEST_TEMPERATURE = 0.6
-    MAX_TEST_SAMPLES = 15
-elif dataset_short_name == 'competition_math':
-    dataset = load_from_disk(dataset_name) 
-    TEST_N = 1
-    MAX_TOKENS = tok_limit
-    TEST_TEMPERATURE = 0.4
-    MAX_TEST_SAMPLES = 100
+    MAX_TEST_SAMPLES = 32000
+else:
+    pass # TODO: add other datasets
     
 print("Available splits in dataset:", dataset.keys()) 
 print("Available keys in dataset:", dataset[split].column_names)
@@ -107,25 +60,13 @@ if args.temperature is not None:
     TEST_TEMPERATURE = float(args.temperature)
 if args.test_n is not None:
     TEST_N = int(args.test_n)
-    
-def post_truncate(response):
-    response = response.split("<|endoftext|>")[0]
-    # response = response.split("\n\n\n")[0]
-    # response = response.split("\n\n")[0]
-    response = response.split("Question:")[0]
-    response = response.split("Problem:")[0]
-    return response
 
 def get_scores(ds, outputs, tokenizer_encode, save_file_name=None):
     results = []
     tot_tokens = 0
     tot_pass_rate = 0
     for input, output in tqdm(zip(ds, outputs), total=len(ds), desc='Analysed responses'):
-        gold = RESPONSE_EXTRACTOR[dataset_short_name](input[ANSWER_KEY])
-        if args.post_truncate:
-            truncated_responses = [post_truncate(resp.text) for resp in output.outputs]
-        else:
-            truncated_responses = [resp.text for resp in output.outputs]
+        truncated_responses = [resp.text for resp in output.outputs]
         prediction = [
             RESPONSE_EXTRACTOR[dataset_short_name](truncated_resp)
             for truncated_resp in truncated_responses
@@ -133,15 +74,14 @@ def get_scores(ds, outputs, tokenizer_encode, save_file_name=None):
         result = {
             QUESTION_KEY: input[QUESTION_KEY],
             ANSWER_KEY: input[ANSWER_KEY],
-            "responses": truncated_responses,  
-            "prediction": prediction,
-            "gold": gold,
+            "verification_thoughts": truncated_responses,  
+            "verification_prediction": prediction,
             "tokens": sum([len(tokenizer_encode(truncated_resp)) for truncated_resp in truncated_responses]) / len(truncated_responses),
-            "accuracy": [eq(gold, pred) for pred in prediction],
+            "verification_accuracy": [eq(str(input[ANSWER_KEY]), str(pred)) for pred in prediction],
         }
         results.append(result)
         tot_tokens += result['tokens']
-        tot_pass_rate += sum(result['accuracy']) / len(result['accuracy'])
+        tot_pass_rate += sum(result['verification_accuracy']) / len(result['verification_accuracy'])
         
     if save_file_name is not None:
         with open(save_file_name, 'w') as f:
@@ -149,7 +89,7 @@ def get_scores(ds, outputs, tokenizer_encode, save_file_name=None):
     
     return {
         'avg_tokens': tot_tokens / len(results),
-        'avg_pass_rate': tot_pass_rate / len(results),
+        'avg_verification_accuracy': tot_pass_rate / len(results),
     } # TODO: add various metrics when required
 
 def evaluate_model():
@@ -160,7 +100,7 @@ def evaluate_model():
     test_ds = dataset[split].shuffle(seed=0).select(range(min(MAX_TEST_SAMPLES, len(dataset[split]))))
     
     for x in test_ds:
-        prompt = template.replace('<question>', x[QUESTION_KEY])
+        prompt = x[QUESTION_KEY]
         prompt_tokens = model.llm_engine.tokenizer.tokenizer.encode(prompt)
         test_prompts.append(prompt_tokens)
     
@@ -178,7 +118,7 @@ def evaluate_model():
     test_scores = get_scores(test_ds, 
                              test_outputs, 
                              model.llm_engine.tokenizer.tokenizer.encode,
-                             f"evaluations/outputs_{dataset_short_name}_{extract_model_shortname(model_path)}_{template_short_name}_{TEST_TEMPERATURE}_{tok_limit}.json")
+                             f"evaluations/verifier_outputs_{dataset_short_name}_{extract_model_shortname(model_path)}_{TEST_TEMPERATURE}_{tok_limit}.json")
     print("Test:", test_scores)
     end_time = time.time()
     time_taken = end_time - start_time
@@ -191,6 +131,7 @@ print("This is not a checkpoint, will evaluate directly...")
 scores = evaluate_model()
 results[model_path] = scores
 
-with open(f'evaluations/results_{dataset_short_name}_{extract_model_shortname(model_path)}_{template_short_name}_{TEST_TEMPERATURE}_{tok_limit}.json', 'w') as f:
-    print('Saving results to', f'evaluations/results_{dataset_short_name}_{extract_model_shortname(model_path)}_{template_short_name}_{TEST_TEMPERATURE}_{tok_limit}.json ...')
+result_file = f'evaluations/verifier_results_{dataset_short_name}_{extract_model_shortname(model_path)}_{TEST_TEMPERATURE}_{tok_limit}.json'
+with open(result_file, 'w') as f:
+    print('Saving results to', result_file)
     json.dump(results, f, indent=4)

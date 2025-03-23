@@ -9,7 +9,8 @@ DATASET_KEYS = {
     'MATH-500': {'question': 'problem', 'answer': 'solution'},
     'compression_dataset': {'question': 'problem', 'answer': 'solution'},
     'AIME_2024': {'question': 'Problem', 'answer': 'Solution'},
-    'AIME2025': {'question': 'question', 'answer': 'answer'}
+    'AIME2025': {'question': 'question', 'answer': 'answer'},
+    'math500-verification': {'question': 'content_to_verify', 'answer': 'verification'}
 }
 
 RESPONSE_EXTRACTOR = {
@@ -20,7 +21,8 @@ RESPONSE_EXTRACTOR = {
     'compression_dataset': lambda x: extract_answer(x, data_name='math'),
     'converted_aime_dataset': lambda x: extract_answer(x, data_name='math'),
     'AIME_2024': lambda x: extract_answer(x, data_name='math'),
-    'AIME2025': lambda x: extract_answer(x, data_name='math')
+    'AIME2025': lambda x: extract_answer(x, data_name='math'),
+    'math500-verification': lambda x: extract_answer(x, data_name='math')
 }
 
 RESPONSE_COMPARATOR = {
@@ -31,7 +33,8 @@ RESPONSE_COMPARATOR = {
     'compression_dataset': lambda x, y: math_equal(x, y, timeout=True),
     'converted_aime_dataset': lambda x, y: math_equal(x, y, timeout=True),
     'AIME_2024': lambda x, y: math_equal(x, y, timeout=True),
-    'AIME2025': lambda x, y: math_equal(x, y, timeout=True)
+    'AIME2025': lambda x, y: math_equal(x, y, timeout=True),
+    'math500-verification': lambda x, y: math_equal(x, y, timeout=True)
 }
 
 def extract_model_shortname(model_path):
