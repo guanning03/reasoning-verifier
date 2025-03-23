@@ -33,3 +33,14 @@ RESPONSE_COMPARATOR = {
     'AIME_2024': lambda x, y: math_equal(x, y, timeout=True),
     'AIME2025': lambda x, y: math_equal(x, y, timeout=True)
 }
+
+def extract_model_shortname(model_path):
+    parts = model_path.split('/')
+    for i in range(len(parts)-1, -1, -1):
+        part = parts[i]
+        if part in ['huggingface', 'actor'] or part.startswith('global_step_'):
+            continue
+        if i < len(parts)-1 and parts[i+1].startswith('global_step_'):
+            return f"{part}_{parts[i+1]}"
+        return part
+    return parts[-1]

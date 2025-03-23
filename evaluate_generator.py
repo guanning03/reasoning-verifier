@@ -11,6 +11,7 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 import warnings
+from utils.utils import extract_model_shortname
 
 warnings.filterwarnings("ignore", category=Warning, module="antlr4.*")
 
@@ -20,6 +21,7 @@ os.makedirs('evaluations', exist_ok=True)
 '''
 CUDA_VISIBLE_DEVICES=1 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/gsm8k" --tok_limit=4096 --split=test --test_n=1 --template="templates/Qwen_gsm8k_8shot.txt" --post_truncate
 CUDA_VISIBLE_DEVICES=1 python evaluate_generator.py --model_path="models/Qwen2.5-Math-1.5B-Instruct" --dataset="./benchmarks/gsm8k" --tok_limit=4096 --split=test --test_n=1 --template="templates/Qwen_gsm8k_CoT_0shot.txt" --post_truncate
+CUDA_VISIBLE_DEVICES=1 python evaluate_generator.py --model_path="checkpoints/qwen2.5-gsm8k-ppo/qwen2.5-gsm8k-ppo-0.5b-0shot-0.001kl-256bs-512ml-256rl-1e-6lr-1e-5cr/global_step_435/actor/huggingface" --dataset="./benchmarks/gsm8k" --tok_limit=4096 --split=test --test_n=1 --template="templates/Qwen_gsm8k_CoT_0shot.txt" --post_truncate
 '''
 '''
 CUDA_VISIBLE_DEVICES=2 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/competition_math" --tok_limit=4096 --split=train --test_n=1 --template="templates/Qwen_MATH_4shot.txt" --post_truncate
@@ -180,7 +182,7 @@ def evaluate_model():
     test_scores = get_scores(test_ds, 
                              test_outputs, 
                              model.llm_engine.tokenizer.tokenizer.encode,
-                             f"evaluations/outputs_{dataset_short_name}_{model_path.split('/')[-1]}_{template_short_name}_{TEST_TEMPERATURE}_{tok_limit}.json")
+                             f"evaluations/outputs_{dataset_short_name}_{extract_model_shortname(model_path)}_{template_short_name}_{TEST_TEMPERATURE}_{tok_limit}.json")
     print("Test:", test_scores)
     end_time = time.time()
     time_taken = end_time - start_time
@@ -193,5 +195,6 @@ print("This is not a checkpoint, will evaluate directly...")
 scores = evaluate_model()
 results[model_path] = scores
 
-with open(f'evaluations/results_{dataset_short_name}_{model_path.split("/")[-1]}_{template_short_name}_{TEST_TEMPERATURE}_{tok_limit}.json', 'w') as f:
+with open(f'evaluations/results_{dataset_short_name}_{extract_model_shortname(model_path)}_{template_short_name}_{TEST_TEMPERATURE}_{tok_limit}.json', 'w') as f:
+    print('Saving results to', f'evaluations/results_{dataset_short_name}_{extract_model_shortname(model_path)}_{template_short_name}_{TEST_TEMPERATURE}_{tok_limit}.json ...')
     json.dump(results, f, indent=4)
