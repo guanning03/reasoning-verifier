@@ -495,6 +495,23 @@ def extract_theoremqa_answer(pred: str, answer_flag: bool = True):
 
     return pred
 
+def extract_yes_no_answer(pred_str: str):
+    """
+    Extract yes/no answer from the prediction string.
+    Returns "1" for yes/true/1, "0" for no/false/0, and "" for no match.
+    """
+    if not pred_str:
+        return ""
+    parts = pred_str.lower().split("is the answer correct (yes/no)?")
+    if len(parts) <= 1:
+        return ""
+    answer = parts[-1].strip()
+    
+    if any(x in answer for x in ['yes', 'true', '1']):
+        return "1"  
+    elif any(x in answer for x in ['no', 'false', '0']):
+        return "0"
+    return ""
 
 def extract_answer(pred_str, data_name, use_last_number=True):
     pred_str = pred_str.replace("\u043a\u0438", "")

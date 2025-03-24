@@ -11,4 +11,4 @@ Response:
 <response>
 
 Verification:
-Let's verify step by step on the student's response and provide final verification result (1 for correct, 0 for incorrect) within \\boxed{{}}.
+Let's verify step by step on the student's response and provide final verification result (1 for correct, 0 for incorrect) within \\boxed{{}}. We don't use python code but just read through the student's response to see if there are mistakes. First, 

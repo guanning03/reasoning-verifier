@@ -21,17 +21,23 @@ def process_math500_data(json_path, template_path):
     
     dataset_dict = {
         'train': {
-            'content_to_verify': [],
-            'original_problem': [],
-            'original_response': [],
-            'verification': [],
-            'original_prediction': [],
-            'original_gold': [],
+            'content_to_verify': [], 'original_problem': [],
+            'original_response': [], 'verification': [],
+            'original_prediction': [], 'original_gold': [],
+            'original_solution': []
+        },
+        'test': { 
+            'content_to_verify': [], 'original_problem': [],
+            'original_response': [], 'verification': [],
+            'original_prediction': [], 'original_gold': [],
             'original_solution': []
         }
     }
     
-    for item in data:
+    for item_idx, item in enumerate(data):
+
+        split = 'train' if item_idx < 450 else 'test'
+        
         problem = item['problem']
         response = item['responses']
         predictions = item['prediction']
@@ -40,35 +46,31 @@ def process_math500_data(json_path, template_path):
         solution = item['solution']
 
         for idx, pred in enumerate(predictions):
-            dataset_dict['train']['content_to_verify'].append(create_content_to_verify(problem, response[idx], template))
-            dataset_dict['train']['original_problem'].append(problem)
-            dataset_dict['train']['original_response'].append(response[idx])
-            dataset_dict['train']['original_prediction'].append(pred)
-            dataset_dict['train']['original_gold'].append(gold)
-            dataset_dict['train']['verification'].append(int(accuracy[idx]))
-            dataset_dict['train']['original_solution'].append(solution)
+            dataset_dict[split]['content_to_verify'].append(create_content_to_verify(problem, response[idx], template))
+            dataset_dict[split]['original_problem'].append(problem)
+            dataset_dict[split]['original_response'].append(response[idx])
+            dataset_dict[split]['original_prediction'].append(pred)
+            dataset_dict[split]['original_gold'].append(gold)
+            dataset_dict[split]['verification'].append(int(accuracy[idx]))
+            dataset_dict[split]['original_solution'].append(solution)
             
-    dataset = Dataset.from_dict(dataset_dict['train'])
-    return dataset
+    train_dataset = Dataset.from_dict(dataset_dict['train'])
+    test_dataset = Dataset.from_dict(dataset_dict['test'])
+    return train_dataset, test_dataset
 
 def main():
     json_path = 'evaluations/MATH500_responses.json'
-    template_path = 'templates/verifier3.txt'
+    template_path = 'templates/verifier4.txt'
 
-    dataset = process_math500_data(json_path, template_path)
+    train_dataset, test_dataset = process_math500_data(json_path, template_path)
 
     print("\n=== Dataset Information ===")
-    print(f"Dataset size: {len(dataset)}")
-    print("\nDataset features:", dataset.features)
-    print("\nFirst example:")
-    print(json.dumps(dataset[0], indent=2, ensure_ascii=False))
+    print(f"Training set size: {len(train_dataset)}")
+    print(f"Test set size: {len(test_dataset)}")
+    print("\nDataset features:", train_dataset.features)
 
-    dataset.save_to_disk('./benchmarks/math500-verification')
-
-    dataset.push_to_hub(
-        "guanning/math500-verification",  
-        private=False 
-    )
+    train_dataset.push_to_hub("guanning/math500-verification", split="train", private=False)
+    test_dataset.push_to_hub("guanning/math500-verification", split="test", private=False)
 
 if __name__ == "__main__":
     main()

@@ -10,12 +10,12 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 from utils.utils import extract_model_shortname
-
+from utils.parser import extract_yes_no_answer
 os.makedirs('evaluations', exist_ok=True)
 
 # Examples 
 '''
-CUDA_VISIBLE_DEVICES=1 python evaluate_verifier.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/math500-verification" --tok_limit=4096 --split=train --test_n=1 
+CUDA_VISIBLE_DEVICES=1 python evaluate_verifier.py --model_path="./models/Qwen2.5-1.5B-Instruct" --dataset="./benchmarks/math500-verification" --tok_limit=8192 --split=train --test_n=1 --template="templates/verifier4.txt" --verification_type="yes_no"
 '''
 
 parser = argparse.ArgumentParser()
@@ -24,7 +24,9 @@ parser.add_argument('--dataset', type=str, default='guanning/math500-verificatio
 parser.add_argument('--tok_limit', type=int, default=4096)
 parser.add_argument('--split', type=str, default='test')
 parser.add_argument('--temperature', type=float, default=None)
+parser.add_argument('--template', type=str, default=None)
 parser.add_argument('--test_n', type=int, default=None)
+parser.add_argument('--verification_type', type=str, default='scalar', choices=['scalar', 'yes_no'])
 
 args = parser.parse_args()
 os.environ['TOKENIZERS_PARALLELISM'] = "false"
@@ -36,11 +38,19 @@ split = args.split
 dataset_name = args.dataset
 dataset_short_name = dataset_name.split('/')[-1]
 results = {}
+template = args.template
+verification_type = args.verification_type
+template_short_name = template.split('/')[-1].split('.')[0] if template is not None else ''
+
+if template is not None:
+    with open(template, 'r', encoding='utf-8') as f:
+        template = f.read()
 
 print("Dataset:", dataset_short_name, "\nModel:", model_path)
 
 QUESTION_KEY = DATASET_KEYS[dataset_short_name]["question"]
 ANSWER_KEY = DATASET_KEYS[dataset_short_name]["answer"]
+extract_answer = RESPONSE_EXTRACTOR[dataset_short_name] if verification_type == 'scalar' else extract_yes_no_answer
 eq = RESPONSE_COMPARATOR[dataset_short_name]
 
 if dataset_short_name == 'math500-verification':
@@ -48,10 +58,10 @@ if dataset_short_name == 'math500-verification':
     TEST_N = 1
     MAX_TOKENS = tok_limit
     TEST_TEMPERATURE = 0.0
-    MAX_TEST_SAMPLES = 32000
+    MAX_TEST_SAMPLES = 200
 else:
     pass # TODO: add other datasets
-    
+
 print("Available splits in dataset:", dataset.keys()) 
 print("Available keys in dataset:", dataset[split].column_names)
 
@@ -68,11 +78,11 @@ def get_scores(ds, outputs, tokenizer_encode, save_file_name=None):
     for input, output in tqdm(zip(ds, outputs), total=len(ds), desc='Analysed responses'):
         truncated_responses = [resp.text for resp in output.outputs]
         prediction = [
-            RESPONSE_EXTRACTOR[dataset_short_name](truncated_resp)
+            extract_answer(truncated_resp)
             for truncated_resp in truncated_responses
         ]
         result = {
-            QUESTION_KEY: input[QUESTION_KEY],
+            QUESTION_KEY: input[QUESTION_KEY] if not template else template.replace('<question>', input['original_problem']).replace('<response>', input['original_response']),
             ANSWER_KEY: input[ANSWER_KEY],
             "verification_thoughts": truncated_responses,  
             "verification_prediction": prediction,
@@ -100,7 +110,7 @@ def evaluate_model():
     test_ds = dataset[split].shuffle(seed=0).select(range(min(MAX_TEST_SAMPLES, len(dataset[split]))))
     
     for x in test_ds:
-        prompt = x[QUESTION_KEY]
+        prompt = x[QUESTION_KEY] if not template else template.replace('<question>', x['original_problem']).replace('<response>', x['original_response'])
         prompt_tokens = model.llm_engine.tokenizer.tokenizer.encode(prompt)
         test_prompts.append(prompt_tokens)
     
@@ -118,7 +128,7 @@ def evaluate_model():
     test_scores = get_scores(test_ds, 
                              test_outputs, 
                              model.llm_engine.tokenizer.tokenizer.encode,
-                             f"evaluations/verifier_outputs_{dataset_short_name}_{extract_model_shortname(model_path)}_{TEST_TEMPERATURE}_{tok_limit}.json")
+                             f"evaluations/verifier_outputs_{dataset_short_name}_{extract_model_shortname(model_path)}_{template_short_name}_{TEST_TEMPERATURE}_{tok_limit}.json")
     print("Test:", test_scores)
     end_time = time.time()
     time_taken = end_time - start_time
@@ -131,7 +141,7 @@ print("This is not a checkpoint, will evaluate directly...")
 scores = evaluate_model()
 results[model_path] = scores
 
-result_file = f'evaluations/verifier_results_{dataset_short_name}_{extract_model_shortname(model_path)}_{TEST_TEMPERATURE}_{tok_limit}.json'
+result_file = f'evaluations/verifier_results_{dataset_short_name}_{extract_model_shortname(model_path)}_{template_short_name}_{TEST_TEMPERATURE}_{tok_limit}.json'
 with open(result_file, 'w') as f:
     print('Saving results to', result_file)
     json.dump(results, f, indent=4)

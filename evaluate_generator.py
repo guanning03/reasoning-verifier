@@ -22,6 +22,7 @@ os.makedirs('evaluations', exist_ok=True)
 CUDA_VISIBLE_DEVICES=1 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/gsm8k" --tok_limit=4096 --split=test --test_n=1 --template="templates/Qwen_gsm8k_8shot.txt" --post_truncate
 CUDA_VISIBLE_DEVICES=1 python evaluate_generator.py --model_path="models/Qwen2.5-Math-1.5B-Instruct" --dataset="./benchmarks/gsm8k" --tok_limit=4096 --split=test --test_n=1 --template="templates/Qwen_gsm8k_CoT_0shot.txt" --post_truncate
 CUDA_VISIBLE_DEVICES=1 python evaluate_generator.py --model_path="checkpoints/qwen2.5-gsm8k-ppo/qwen2.5-gsm8k-ppo-0.5b-0shot-0.001kl-256bs-512ml-256rl-1e-6lr-1e-5cr/global_step_435/actor/huggingface" --dataset="./benchmarks/gsm8k" --tok_limit=4096 --split=test --test_n=1 --template="templates/Qwen_gsm8k_CoT_0shot.txt" --post_truncate
+CUDA_VISIBLE_DEVICES=1 python evaluate_generator.py --model_path="models/Qwen2-0.5B-Instruct" --dataset="./benchmarks/gsm8k" --tok_limit=4096 --split=test --test_n=1 --template="templates/Qwen_gsm8k_8shot.txt" --post_truncate
 '''
 '''
 CUDA_VISIBLE_DEVICES=2 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/competition_math" --tok_limit=4096 --split=train --test_n=1 --template="templates/Qwen_MATH_4shot.txt" --post_truncate

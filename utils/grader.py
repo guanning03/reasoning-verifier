@@ -81,8 +81,19 @@ def math_equal(
     Exact match of math if and only if:
     1. numerical equal: both can convert to float and are equal
     2. symbolic equal: both can convert to sympy expression and are equal
+    3. yes/no matching with 1/0
     """
-    # print("Judge:", prediction, reference)
+
+    yes_values = ['yes', 'true', '1', 1, True]
+    no_values = ['no', 'false', '0', 0, False]
+    
+    pred_lower = str(prediction).strip().lower() if prediction is not None else ''
+    ref_lower = str(reference).strip().lower() if reference is not None else ''
+    
+    if (pred_lower in yes_values and ref_lower in yes_values) or \
+       (pred_lower in no_values and ref_lower in no_values):
+        return True
+
     if prediction is None or reference is None:
         return False
     if str(prediction.strip().lower()) == str(reference.strip().lower()):
