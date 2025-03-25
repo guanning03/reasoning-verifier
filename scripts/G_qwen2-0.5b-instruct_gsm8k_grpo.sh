@@ -48,7 +48,7 @@ python3 -m verl.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='generator-verl' \
-    trainer.experiment_name='qwen2.5-gsm8k-grpo-0.5b' \
+    trainer.experiment_name='qwen2-0.5b-instruct_gsm8k_grpo' \
     trainer.n_gpus_per_node=2 \
     trainer.nnodes=1 \
     trainer.save_freq=20 \

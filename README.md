@@ -66,23 +66,21 @@ python evaluate_generator.py --model_path="models/Qwen2-0.5B-Instruct" --dataset
 Download training data:
 
 ```bash
-python benchmarks/download_benchmark.py
+python benchmarks/download_benchmark.py # check code first and select correct benchmark
 ```
 
 Download base model:
 
 ```bash
-python models/download_model.py
+python models/download_model.py # check code first and select correct model
 ```
 
 Training `Qwen/Qwen2-0.5B-Instruct` on `gsm8k` with GRPO:
 
 ```bash
-bash scripts/qwen2.5-0.5b_gsm8k_grpo.sh
+bash scripts/qwen2-0.5b-instruct_gsm8k_grpo.sh
 ```
 
 ### How to Train Verifier
 
 TODO
-
-

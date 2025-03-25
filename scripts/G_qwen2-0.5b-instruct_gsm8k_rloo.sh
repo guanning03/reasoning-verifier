@@ -1,11 +1,11 @@
 set -x
-
+mkdir -p logs/
 CURRENT_TIME=$(date "+%Y%m%d_%H%M%S")
 echo "Job started on `hostname` at `date`"
 
 # ray stop
 
-export CUDA_VISIBLE_DEVICES='6,7'
+export CUDA_VISIBLE_DEVICES='0,1'
 export WANDB_MODE='online'
 
 export VLLM_ATTENTION_BACKEND=XFORMERS
@@ -17,7 +17,7 @@ train_files="['$gsm8k_train_path']"
 test_files="['$gsm8k_test_path']"
 
 python3 -m verl.trainer.main_ppo \
-    algorithm.adv_estimator=grpo \
+    algorithm.adv_estimator=rloo \
     data.train_files="$train_files" \
     data.val_files="$test_files" \
     data.train_batch_size=128 \
@@ -25,7 +25,7 @@ python3 -m verl.trainer.main_ppo \
     data.max_response_length=1024 \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
-    actor_rollout_ref.model.path=models/Qwen2.5-Math-1.5B-Instruct \
+    actor_rollout_ref.model.path=models/Qwen2-0.5B-Instruct \
     actor_rollout_ref.actor.optim.lr=1e-6 \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.actor.ppo_mini_batch_size=32 \
@@ -48,7 +48,7 @@ python3 -m verl.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='generator-verl' \
-    trainer.experiment_name='qwen2.5-gsm8k-grpo-1.5b' \
+    trainer.experiment_name='qwen2-0.5b-instruct_gsm8k_rloo' \
     trainer.n_gpus_per_node=2 \
     trainer.nnodes=1 \
     trainer.save_freq=20 \

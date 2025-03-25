@@ -16,6 +16,9 @@ os.makedirs('evaluations', exist_ok=True)
 # Examples 
 '''
 CUDA_VISIBLE_DEVICES=1 python evaluate_verifier.py --model_path="./models/Qwen2.5-1.5B-Instruct" --dataset="./benchmarks/math500-verification" --tok_limit=8192 --split=train --test_n=1 --template="templates/verifier4.txt" --verification_type="yes_no"
+CUDA_VISIBLE_DEVICES=0 python evaluate_verifier.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/math500-verification" --tok_limit=4096 --split=train --test_n=1 --template="templates/verifier4.txt" --verification_type="yes_no"
+CUDA_VISIBLE_DEVICES=2 python evaluate_verifier.py --model_path="./models/Qwen2.5-Math-1.5B-Instruct" --dataset="./benchmarks/math500-verification" --tok_limit=4096 --split=train --test_n=1 --template="templates/verifier4.txt" --verification_type="yes_no"
+CUDA_VISIBLE_DEVICES=3 python evaluate_verifier.py --model_path="./models/Qwen2.5-1.5B" --dataset="./benchmarks/math500-verification" --tok_limit=8192 --split=train --test_n=1 --template="templates/verifier4.txt" --verification_type="yes_no"
 '''
 
 parser = argparse.ArgumentParser()
@@ -58,7 +61,7 @@ if dataset_short_name == 'math500-verification':
     TEST_N = 1
     MAX_TOKENS = tok_limit
     TEST_TEMPERATURE = 0.0
-    MAX_TEST_SAMPLES = 200
+    MAX_TEST_SAMPLES = 3200
 else:
     pass # TODO: add other datasets
 
