@@ -2,12 +2,11 @@
 # Also Used for Creating Response Dataset 
 
 import os, time
-os.environ['VLLM_ALLOW_LONG_MAX_MODEL_LEN'] = '1'
+# os.environ['VLLM_ALLOW_LONG_MAX_MODEL_LEN'] = '1'
 import json
 from vllm import LLM, SamplingParams
 from datasets import load_from_disk, load_dataset
 from utils import DATASET_KEYS, RESPONSE_EXTRACTOR, RESPONSE_COMPARATOR
-import pandas as pd
 import argparse
 import numpy as np
 from tqdm import tqdm

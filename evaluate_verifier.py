@@ -91,6 +91,8 @@ def get_scores(ds, outputs, tokenizer_encode, save_file_name=None):
             "verification_prediction": prediction,
             "tokens": sum([len(tokenizer_encode(truncated_resp)) for truncated_resp in truncated_responses]) / len(truncated_responses),
             "verification_accuracy": [eq(str(input[ANSWER_KEY]), str(pred)) for pred in prediction],
+            "original_gold": input['original_gold'],
+            "original_prediction": input['original_prediction'],
         }
         results.append(result)
         tot_tokens += result['tokens']
