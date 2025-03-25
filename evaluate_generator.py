@@ -33,7 +33,8 @@ CUDA_VISIBLE_DEVICES=2 python evaluate_generator.py --model_path="./models/Qwen2
 CUDA_VISIBLE_DEVICES=0 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH-500" --tok_limit=4096 --split=test --test_n=1 --template="templates/Qwen_MATH_4shot.txt" --post_truncate
 '''
 '''
-CUDA_VISIBLE_DEVICES=7 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH-500" --tok_limit=4096 --split=test --test_n=256 --template="templates/Qwen_MATH_0shot.txt"
+CUDA_VISIBLE_DEVICES=7 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH_train_test_split" --tok_limit=4096 --split=train --test_n=4 --template="templates/Qwen_MATH_0shot.txt" --temperature=0.6
+CUDA_VISIBLE_DEVICES=6 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH_train_test_split" --tok_limit=4096 --split=test --test_n=4 --template="templates/Qwen_MATH_0shot.txt" --temperature=0.6
 '''
 
 parser = argparse.ArgumentParser()
@@ -44,6 +45,7 @@ parser.add_argument('--split', type=str, default='test')
 parser.add_argument('--temperature', type=float, default=None)
 parser.add_argument('--test_n', type=int, default=None)
 parser.add_argument('--template', type=str, default='templates/Qwen_gsm8k_8shot.txt')
+parser.add_argument('--max_test_samples', type=int, default=None)
 parser.add_argument('--post_truncate', action='store_true', default=False)
 args = parser.parse_args()
 os.environ['TOKENIZERS_PARALLELISM'] = "false"
@@ -99,13 +101,16 @@ elif dataset_short_name == 'AIME2025':
     MAX_TOKENS = tok_limit
     TEST_TEMPERATURE = 0.6
     MAX_TEST_SAMPLES = 15
-elif dataset_short_name == 'competition_math':
+elif dataset_short_name in ['competition_math', 'MATH_train_test_split']:
     dataset = load_from_disk(dataset_name) 
     TEST_N = 1
     MAX_TOKENS = tok_limit
     TEST_TEMPERATURE = 0.4
-    MAX_TEST_SAMPLES = 100
+    MAX_TEST_SAMPLES = 12000
     
+if args.max_test_samples is not None:
+    MAX_TEST_SAMPLES = args.max_test_samples
+
 print("Available splits in dataset:", dataset.keys()) 
 print("Available keys in dataset:", dataset[split].column_names)
 
@@ -159,6 +164,8 @@ def get_scores(ds, outputs, tokenizer_encode, save_file_name=None):
         'avg_pass_rate': tot_pass_rate / len(results),
     } # TODO: add various metrics when required
 
+experiment_name = f"{dataset_short_name}_{extract_model_shortname(model_path)}_{split}_{MAX_TEST_SAMPLES}_{template_short_name}_{TEST_TEMPERATURE}_{tok_limit}"
+
 def evaluate_model():
     test_prompts = []
     model = LLM(model_path, tokenizer=model_path, gpu_memory_utilization=0.9, 
@@ -185,7 +192,7 @@ def evaluate_model():
     test_scores = get_scores(test_ds, 
                              test_outputs, 
                              model.llm_engine.tokenizer.tokenizer.encode,
-                             f"evaluations/outputs_{dataset_short_name}_{extract_model_shortname(model_path)}_{template_short_name}_{TEST_TEMPERATURE}_{tok_limit}.json")
+                             f"evaluations/outputs_{experiment_name}.json")
     print("Test:", test_scores)
     end_time = time.time()
     time_taken = end_time - start_time
@@ -198,7 +205,7 @@ print("This is not a checkpoint, will evaluate directly...")
 scores = evaluate_model()
 results[model_path] = scores
 
-result_file = f'evaluations/results_{dataset_short_name}_{extract_model_shortname(model_path)}_{template_short_name}_{TEST_TEMPERATURE}_{tok_limit}.json'
+result_file = f'evaluations/results_{experiment_name}.json'
 with open(result_file, 'w') as f:
     print('Saving results to', result_file)
     json.dump(results, f, indent=4)

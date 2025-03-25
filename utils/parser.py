@@ -502,15 +502,43 @@ def extract_yes_no_answer(pred_str: str):
     """
     if not pred_str:
         return ""
+
+    matches = []
+
     parts = pred_str.lower().split("is the answer correct (yes/no)?")
-    if len(parts) <= 1:
-        return ""
-    answer = parts[-1].strip()
+    if len(parts) > 1:
+        answer = parts[-1].strip()
+        pos = len(pred_str) - len(parts[-1])
+        if any(x in answer for x in ['yes']):
+            matches.append((pos, "1"))
+        elif any(x in answer for x in ['no']):
+            matches.append((pos, "0"))
+
+    verification_matches = re.finditer(r'verification:\s*(yes|no)', pred_str.lower())
+    for match in verification_matches:
+        pos = match.start()
+        result = "1" if match.group(1) == "yes" else "0"
+        matches.append((pos, result))
+
+    correct_matches = re.finditer(r'the answer is\s*(correct|incorrect|wrong)', pred_str.lower())
+    for match in correct_matches:
+        pos = match.start()
+        result = "1" if match.group(1) == "correct" else "0"
+        matches.append((pos, result))
+
+    boxed_matches = re.finditer(r'\\boxed\{(.*?)\}', pred_str.lower())
+    for match in boxed_matches:
+        content = match.group(1)
+        pos = match.start()
+        if any(x in content for x in ['yes']):
+            matches.append((pos, "1"))
+        elif any(x in content for x in ['no']):
+            matches.append((pos, "0"))
+
+    if matches:
+        matches.sort(key=lambda x: x[0]) 
+        return matches[-1][1] 
     
-    if any(x in answer for x in ['yes', 'true', '1']):
-        return "1"  
-    elif any(x in answer for x in ['no', 'false', '0']):
-        return "0"
     return ""
 
 def extract_answer(pred_str, data_name, use_last_number=True):
@@ -553,12 +581,17 @@ def extract_answer(pred_str, data_name, use_last_number=True):
         pred = pred_str.split("答案是")[1].strip().split("\n\n")[0].strip()
     else:  # use the last number
         if use_last_number:
-            pattern = "-?\d*\.?\d+"
-            pred = re.findall(pattern, pred_str.replace(",", ""))
-            if len(pred) >= 1:
-                pred = pred[-1]
+            sqrt_pattern = r'(?:=|\s|[a-zA-Z]|\$)([^=a-zA-Z$]*(?:\d+\s*[+\-*/]\s*)*\d*\\*sqrt\{[^}]+\}[^=a-zA-Z$]*)'
+            sqrt_matches = re.findall(sqrt_pattern, pred_str)
+            if sqrt_matches:
+                pred = sqrt_matches[-1].strip()
             else:
-                pred = ""
+                pattern = "-?\d*\.?\d+"
+                pred = re.findall(pattern, pred_str.replace(",", ""))
+                if len(pred) >= 1:
+                    pred = pred[-1]
+                else:
+                    pred = ""
         else:
             pred = ""
 

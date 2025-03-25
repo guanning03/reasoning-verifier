@@ -15,10 +15,7 @@ os.makedirs('evaluations', exist_ok=True)
 
 # Examples 
 '''
-CUDA_VISIBLE_DEVICES=1 python evaluate_verifier.py --model_path="./models/Qwen2.5-1.5B-Instruct" --dataset="./benchmarks/math500-verification" --tok_limit=8192 --split=train --test_n=1 --template="templates/verifier4.txt" --verification_type="yes_no"
-CUDA_VISIBLE_DEVICES=0 python evaluate_verifier.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/math500-verification" --tok_limit=4096 --split=train --test_n=1 --template="templates/verifier4.txt" --verification_type="yes_no"
-CUDA_VISIBLE_DEVICES=2 python evaluate_verifier.py --model_path="./models/Qwen2.5-Math-1.5B-Instruct" --dataset="./benchmarks/math500-verification" --tok_limit=4096 --split=train --test_n=1 --template="templates/verifier4.txt" --verification_type="yes_no"
-CUDA_VISIBLE_DEVICES=3 python evaluate_verifier.py --model_path="./models/Qwen2.5-1.5B" --dataset="./benchmarks/math500-verification" --tok_limit=8192 --split=train --test_n=1 --template="templates/verifier4.txt" --verification_type="yes_no"
+CUDA_VISIBLE_DEVICES=1 python evaluate_verifier.py --model_path="./models/Qwen2.5-1.5B-Instruct" --dataset="./benchmarks/math500-verification" --tok_limit=8192 --split=train --test_n=1 --template="templates/verifier4.txt" --verification_type="yes_no" --post_truncate
 '''
 
 parser = argparse.ArgumentParser()
@@ -30,6 +27,7 @@ parser.add_argument('--temperature', type=float, default=None)
 parser.add_argument('--template', type=str, default=None)
 parser.add_argument('--test_n', type=int, default=None)
 parser.add_argument('--verification_type', type=str, default='scalar', choices=['scalar', 'yes_no'])
+parser.add_argument('--post_truncate', action='store_true', default=False)
 
 args = parser.parse_args()
 os.environ['TOKENIZERS_PARALLELISM'] = "false"
@@ -44,6 +42,10 @@ results = {}
 template = args.template
 verification_type = args.verification_type
 template_short_name = template.split('/')[-1].split('.')[0] if template is not None else ''
+
+def post_truncate(response):
+    response = response.split("Q:\n")[0]
+    return response
 
 if template is not None:
     with open(template, 'r', encoding='utf-8') as f:
