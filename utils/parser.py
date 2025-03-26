@@ -495,13 +495,17 @@ def extract_theoremqa_answer(pred: str, answer_flag: bool = True):
 
     return pred
 
-def extract_yes_no_answer(pred_str: str):
+def extract_yes_no_answer(pred_str: str, truncate_tags = None):
     """
     Extract yes/no answer from the prediction string.
     Returns "1" for yes/true/1, "0" for no/false/0, and "" for no match.
     """
     if not pred_str:
         return ""
+    
+    if truncate_tags:
+        for tag in truncate_tags:
+            pred_str = pred_str.split(tag)[0]
 
     matches = []
 
@@ -581,17 +585,12 @@ def extract_answer(pred_str, data_name, use_last_number=True):
         pred = pred_str.split("答案是")[1].strip().split("\n\n")[0].strip()
     else:  # use the last number
         if use_last_number:
-            sqrt_pattern = r'(?:=|\s|[a-zA-Z]|\$)([^=a-zA-Z$]*(?:\d+\s*[+\-*/]\s*)*\d*\\*sqrt\{[^}]+\}[^=a-zA-Z$]*)'
-            sqrt_matches = re.findall(sqrt_pattern, pred_str)
-            if sqrt_matches:
-                pred = sqrt_matches[-1].strip()
+            pattern = "-?\d*\.?\d+"
+            pred = re.findall(pattern, pred_str.replace(",", ""))
+            if len(pred) >= 1:
+                pred = pred[-1]
             else:
-                pattern = "-?\d*\.?\d+"
-                pred = re.findall(pattern, pred_str.replace(",", ""))
-                if len(pred) >= 1:
-                    pred = pred[-1]
-                else:
-                    pred = ""
+                pred = ""
         else:
             pred = ""
 

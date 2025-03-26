@@ -83,9 +83,20 @@ def math_equal(
     2. symbolic equal: both can convert to sympy expression and are equal
     3. yes/no matching with 1/0
     """
-
-    yes_values = ['yes', 'true', '1', 1, True]
-    no_values = ['no', 'false', '0', 0, False]
+    yes_values = ['yes', 'true', '1', 1, True, '1.0', '1.00']
+    no_values = ['no', 'false', '0', 0, False, '0.0', '0.00']
+    
+    if not isinstance(prediction, str):
+        try: 
+            prediction = str(prediction)
+        except:
+            return False
+    
+    if not isinstance(reference, str):
+        try:
+            reference = str(reference)
+        except:
+            return False
     
     pred_lower = str(prediction).strip().lower() if prediction is not None else ''
     ref_lower = str(reference).strip().lower() if reference is not None else ''

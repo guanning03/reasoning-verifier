@@ -10,7 +10,7 @@ import argparse
 
 # Example:
 '''
-python data-transfer_verl.py --dataset_path="./benchmarks/math500-verification" 
+python data-transfer_verl.py --dataset_path="./benchmarks/math-verification" 
 '''
 
 if __name__ == '__main__':

@@ -1,0 +1,14 @@
+<|im_start|>system
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Solve the math problems and provide step-by-step solutions, ending with "The answer is [Insert Final Answer Here]".
+When asked "Verification: Is the answer correct (Yes/No)?", respond with "Yes" or "No" based on the answer's correctness.
+When asked "Verification: Let's verify step by step.", verify every step of the solution and conclude with "Verification: Is the answer correct (Yes/No)?" followed by "Yes" or "No".
+
+Q:
+<question>
+A:
+<response>
+Verification: Let's verify step by step.
+<|im_end|>
+<|im_start|>assistant

@@ -42,9 +42,9 @@ def _default_compute_score(data_source, solution_str, ground_truth, extra_info=N
         from . import geo3k
         res = geo3k.compute_score(solution_str, ground_truth)
     elif data_source.endswith('verification'):
-        from utils.parser import extract_answer
+        from utils.parser import extract_yes_no_answer
         from utils.grader import math_equal
-        res = math_equal(prediction = extract_answer(solution_str, data_name='math'), 
+        res = math_equal(prediction = extract_yes_no_answer(solution_str, truncate_tags = ['Q:\n']), 
                          reference = ground_truth)
     else:
         raise NotImplementedError

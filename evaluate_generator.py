@@ -33,8 +33,8 @@ CUDA_VISIBLE_DEVICES=2 python evaluate_generator.py --model_path="./models/Qwen2
 CUDA_VISIBLE_DEVICES=0 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH-500" --tok_limit=4096 --split=test --test_n=1 --template="templates/Qwen_MATH_4shot.txt" --post_truncate
 '''
 '''
-CUDA_VISIBLE_DEVICES=7 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH_train_test_split" --tok_limit=4096 --split=train --test_n=4 --template="templates/Qwen_MATH_0shot.txt" --temperature=0.6
-CUDA_VISIBLE_DEVICES=6 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH_train_test_split" --tok_limit=4096 --split=test --test_n=4 --template="templates/Qwen_MATH_0shot.txt" --temperature=0.6
+CUDA_VISIBLE_DEVICES=7 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH_train_test_split" --tok_limit=3072 --split=train --test_n=2 --template="templates/Qwen_MATH_0shot.txt" --temperature=0.6
+CUDA_VISIBLE_DEVICES=4 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH_train_test_split" --tok_limit=3072 --split=test --test_n=2 --template="templates/Qwen_MATH_0shot.txt" --temperature=0.6
 '''
 
 parser = argparse.ArgumentParser()
@@ -110,6 +110,8 @@ elif dataset_short_name in ['competition_math', 'MATH_train_test_split']:
     
 if args.max_test_samples is not None:
     MAX_TEST_SAMPLES = args.max_test_samples
+    
+MAX_TEST_SAMPLES = min(MAX_TEST_SAMPLES, len(dataset[split]))
 
 print("Available splits in dataset:", dataset.keys()) 
 print("Available keys in dataset:", dataset[split].column_names)
