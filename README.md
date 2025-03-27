@@ -54,6 +54,13 @@ Qwen2-1.5B-Instruct:
 python evaluate_generator.py --model_path="models/Qwen2-1.5B-Instruct" --dataset="./benchmarks/gsm8k" --tok_limit=4096 --split=test --test_n=1 --template="templates/Qwen_gsm8k_0shot.txt"
 ```
 
+Qwen2-1.5B-Instruct:
+
+```bash
+# About 73%
+python evaluate_generator.py --model_path="models/Qwen2.5-1.5B-Instruct" --dataset="./benchmarks/gsm8k" --tok_limit=4096 --split=test --test_n=1 --template="templates/Qwen_gsm8k_CoT_0shot.txt"
+```
+
 Qwen2-0.5B-Instruct:
 
 ```bash
