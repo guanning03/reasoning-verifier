@@ -16,7 +16,7 @@ gsm8k_test_path=./benchmarks/gsm8k/test.parquet
 train_files="['$gsm8k_train_path']"
 test_files="['$gsm8k_test_path']"
 
-python3 -m verl.trainer.main_ppo \
+PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
     data.train_files="$train_files" \
     data.val_files="$test_files" \

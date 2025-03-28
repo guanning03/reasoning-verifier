@@ -16,7 +16,7 @@ math500v_test_path=./benchmarks/math500-verification/test.parquet
 train_files="['$math500v_train_path']"
 test_files="['$math500v_test_path']"
 
-python3 -m verl.trainer.main_ppo \
+PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
     data.train_files="$train_files" \
     data.val_files="$test_files" \

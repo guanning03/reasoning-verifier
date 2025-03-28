@@ -1,5 +1,5 @@
 set -x
-
+mkdir -p logs/
 CURRENT_TIME=$(date "+%Y%m%d_%H%M%S")
 echo "Job started on `hostname` at `date`"
 
@@ -10,11 +10,11 @@ export WANDB_MODE='online'
 
 export VLLM_ATTENTION_BACKEND=XFORMERS
 
-gsm8k_train_path=./benchmarks/gsm8k/train.parquet
-gsm8k_test_path=./benchmarks/gsm8k/test.parquet
+math_verification_train_path=./benchmarks/math-verification/train.parquet
+math_verification_test_path=./benchmarks/math-verification/test.parquet
 
-train_files="['$gsm8k_train_path']"
-test_files="['$gsm8k_test_path']"
+train_files="['$math_verification_train_path']"
+test_files="['$math_verification_test_path']"
 
 PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
@@ -25,7 +25,7 @@ PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo \
     data.max_response_length=1024 \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
-    actor_rollout_ref.model.path=models/Qwen2.5-Math-1.5B-Instruct \
+    actor_rollout_ref.model.path=models/Qwen2.5-1.5B-Instruct \
     actor_rollout_ref.actor.optim.lr=1e-6 \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.actor.ppo_mini_batch_size=32 \
@@ -47,11 +47,11 @@ PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo \
     algorithm.kl_ctrl.kl_coef=0.001 \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
-    trainer.project_name='generator-verl' \
-    trainer.experiment_name='qwen2.5-math-1.5b-instruct_gsm8k_grpo' \
+    trainer.project_name='verifier-verl' \
+    trainer.experiment_name='qwen2.5-1.5b-instruct_math-v_grpo' \
     trainer.n_gpus_per_node=2 \
     trainer.nnodes=1 \
-    trainer.save_freq=20 \
+    trainer.save_freq=100 \
     trainer.test_freq=20 \
     trainer.max_ckpt_to_keep=2 \
-    trainer.total_epochs=15 $@ 2>&1 | tee logs/${CURRENT_TIME}.log
+    trainer.total_epochs=40 $@ 2>&1 | tee logs/${CURRENT_TIME}.log
