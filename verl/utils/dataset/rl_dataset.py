@@ -89,7 +89,8 @@ class RLHFDataset(Dataset):
                  chat_template_func=None,
                  return_raw_chat=False,
                  truncation='error',
-                 filter_overlong_prompts=False):
+                 filter_overlong_prompts=False, 
+                 disable_chat_template=False):
         if not isinstance(parquet_files, (List, ListConfig)):
             parquet_files = [parquet_files]
 
@@ -108,7 +109,12 @@ class RLHFDataset(Dataset):
         self.chat_template_func = chat_template_func
         self.truncation = truncation
         self.filter_overlong_prompts = filter_overlong_prompts
-
+        if disable_chat_template:
+            self.chat_template = """{% for message in messages %}
+                {{ message['content'] }}
+            {% endfor %}"""
+        else:
+            self.chat_template = None
         # whether to store the dataset in state_dict()
         # default not store
         self.serialize_dataset = False
@@ -136,7 +142,9 @@ class RLHFDataset(Dataset):
             tokenizer = self.tokenizer
             prompt_key = self.prompt_key
             self.dataframe = self.dataframe[self.dataframe.apply(lambda doc: len(
-                tokenizer.apply_chat_template(doc[prompt_key], add_generation_prompt=True)) <= self.max_prompt_length,
+                tokenizer.apply_chat_template(doc[prompt_key], 
+                                              add_generation_prompt=True, 
+                                              chat_template=self.chat_template)) <= self.max_prompt_length,
                                                                  axis=1)]
 
             print(f'filter dataset len: {len(self.dataframe)}')
@@ -161,7 +169,8 @@ class RLHFDataset(Dataset):
 
         chat = row_dict.pop(self.prompt_key)
 
-        prompt_with_chat_template = self.tokenizer.apply_chat_template(chat, add_generation_prompt=True, tokenize=False)
+        prompt_with_chat_template = self.tokenizer.apply_chat_template(chat, add_generation_prompt=True, tokenize=False,
+                                                                       chat_template=self.chat_template)
 
         is_multi_modal = self.image_key in row_dict
         if is_multi_modal:  # expand image token

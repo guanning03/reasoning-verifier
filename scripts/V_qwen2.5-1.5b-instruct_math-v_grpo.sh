@@ -5,7 +5,7 @@ echo "Job started on `hostname` at `date`"
 
 # ray stop
 
-export CUDA_VISIBLE_DEVICES='6,7'
+export CUDA_VISIBLE_DEVICES='4,5'
 export WANDB_MODE='online'
 
 export VLLM_ATTENTION_BACKEND=XFORMERS
@@ -21,10 +21,11 @@ PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo \
     data.train_files="$train_files" \
     data.val_files="$test_files" \
     data.train_batch_size=128 \
-    data.max_prompt_length=1024 \
-    data.max_response_length=1024 \
+    data.max_prompt_length=4096 \
+    data.max_response_length=4096 \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
+    data.disable_chat_template=True \
     actor_rollout_ref.model.path=models/Qwen2.5-1.5B-Instruct \
     actor_rollout_ref.actor.optim.lr=1e-6 \
     actor_rollout_ref.model.use_remove_padding=True \
