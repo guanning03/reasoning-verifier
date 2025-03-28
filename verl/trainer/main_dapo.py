@@ -14,7 +14,7 @@
 """
 Note that we don't combine the main with ray_trainer as ray_trainer is used by other main.
 """
-from .dapo_ray_trainer import RayDAPOTrainer
+from verl.trainer.dapo.dapo_ray_trainer import RayDAPOTrainer
 
 import os
 import ray

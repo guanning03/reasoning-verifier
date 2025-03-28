@@ -14,7 +14,7 @@
 # from . import gsm8k, math, prime_math, prime_code
 
 
-def _default_compute_score(data_source, solution_str, ground_truth, extra_info=None):
+def _default_compute_score(data_source, solution_str, ground_truth, extra_info=None, return_dict=False):
     if data_source == 'openai/gsm8k':
         # from . import gsm8k
         # res = gsm8k.compute_score(solution_str, ground_truth)
@@ -49,7 +49,13 @@ def _default_compute_score(data_source, solution_str, ground_truth, extra_info=N
     else:
         raise NotImplementedError
 
-    if isinstance(res, (int, float, bool)):
-        return float(res)
+    if not return_dict:
+        if isinstance(res, (int, float, bool)):
+            return res
+        else:
+            return float(res[0])
     else:
-        return float(res[0])
+        return {
+            'score': float(res),
+            'acc': float(res),
+        }

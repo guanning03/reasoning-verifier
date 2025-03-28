@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
-set -euxo pipefail
+set -x
+mkdir -p logs/
+CURRENT_TIME=$(date "+%Y%m%d_%H%M%S")
+echo "Job started on `hostname` at `date`"
 
-project_name='DAPO'
-exp_name='DAPO-Qwen2.5-32B'
+export CUDA_VISIBLE_DEVICES=1,2
+export WANDB_MODE='online'
+
+project_name='generator-verl'
+exp_name='qwen2-0.5B-instruct_gsm8k_dapo'
 
 adv_estimator=grpo
 
@@ -13,10 +19,10 @@ kl_loss_coef=0.0
 clip_ratio_low=0.2
 clip_ratio_high=0.28
 
-max_prompt_length=$((1024 * 2))
-max_response_length=$((1024 * 20))
+max_prompt_length=1024
+max_response_length=2048
 enable_overlong_buffer=True
-overlong_buffer_len=$((1024 * 4))
+overlong_buffer_len=512
 overlong_penalty_factor=1.0
 
 loss_agg_mode="token-mean"
@@ -29,17 +35,11 @@ gen_prompt_bsz=$((train_prompt_bsz * 3))
 n_resp_per_prompt=16
 train_prompt_mini_bsz=32
 
-# Ray
-RAY_ADDRESS=${RAY_ADDRESS:-"http://localhost:8265"}
-WORKING_DIR=${WORKING_DIR:-"${PWD}"}
-RUNTIME_ENV=${RUNTIME_ENV:-"${WORKING_DIR}/verl/trainer/runtime_env.yaml"}
-NNODES=${NNODES:-16}
 # Paths
-RAY_DATA_HOME=${RAY_DATA_HOME:-"${HOME}/verl"}
-MODEL_PATH=${MODEL_PATH:-"${RAY_DATA_HOME}/models/Qwen2.5-32B"}
-CKPTS_DIR=${CKPTS_DIR:-"${RAY_DATA_HOME}/ckpts/${project_name}/${exp_name}"}
-TRAIN_FILE=${TRAIN_FILE:-"${RAY_DATA_HOME}/data/dapo-math-17k.parquet"}
-TEST_FILE=${TEST_FILE:-"${RAY_DATA_HOME}/data/aime-2024.parquet"}
+MODEL_PATH="./models/Qwen2-0.5B-Instruct"
+CKPTS_DIR="./checkpoints/${project_name}/${exp_name}"
+TRAIN_FILE="./benchmarks/gsm8k/train.parquet"
+TEST_FILE="./benchmarks/gsm8k/test.parquet"
 
 # Algorithm
 temperature=1.0
@@ -47,16 +47,14 @@ top_p=1.0
 top_k=-1 # 0 for HF rollout, -1 for vLLM rollout
 
 # Performance Related Parameter
-sp_size=8
+sp_size=2
 use_dynamic_bsz=True
 actor_ppo_max_token_len=$((max_prompt_length + max_response_length))
 infer_ppo_max_token_len=$((max_prompt_length + max_response_length))
 offload=True
-gen_tp=4
+gen_tp=2
 
-ray job submit --no-wait --runtime-env="${RUNTIME_ENV}" \
-    --working-dir "${WORKING_DIR}" \
-    -- python3 -m recipe.dapo.src.main_dapo \
+PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_dapo \
     data.train_files="${TRAIN_FILE}" \
     data.val_files="${TEST_FILE}" \
     data.prompt_key=prompt \
@@ -119,11 +117,11 @@ ray job submit --no-wait --runtime-env="${RUNTIME_ENV}" \
     trainer.logger=['console','wandb'] \
     trainer.project_name="${project_name}" \
     trainer.experiment_name="${exp_name}" \
-    trainer.n_gpus_per_node=8 \
-    trainer.nnodes="${NNODES}" \
+    trainer.n_gpus_per_node=2 \
+    trainer.nnodes=1 \
     +trainer.val_before_train=True \
     trainer.test_freq=5 \
     trainer.save_freq=5 \
     trainer.total_epochs=1 \
     trainer.default_local_dir="${CKPTS_DIR}" \
-    trainer.resume_mode=auto
+    trainer.resume_mode=auto $@ 2>&1 | tee logs/${CURRENT_TIME}.log

@@ -283,7 +283,8 @@ class DataProto:
             else:
                 raise ValueError(f'Unsupported type in data {type(val)}')
 
-        return DataProto.from_dict(tensors=tensors, non_tensors=non_tensors, meta_info=meta_info)
+        ret = DataProto.from_dict(tensors=tensors, non_tensors=non_tensors, meta_info=meta_info)
+        return ret
 
     @classmethod
     def from_dict(cls, tensors: Dict[str, torch.Tensor], non_tensors=None, meta_info=None, num_batch_dims=1):
@@ -319,7 +320,8 @@ class DataProto:
             non_tensors[key] = np.array(val, dtype=object)
 
         tensor_dict = TensorDict(source=tensors, batch_size=batch_size)
-        return cls(batch=tensor_dict, non_tensor_batch=non_tensors, meta_info=meta_info)
+        ret = cls(batch=tensor_dict, non_tensor_batch=non_tensors, meta_info=meta_info)
+        return ret
 
     def to(self, device) -> 'DataProto':
         """move the batch to device

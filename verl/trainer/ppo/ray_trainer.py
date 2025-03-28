@@ -901,7 +901,6 @@ class RayPPOTrainer(object):
                             reward_tensor = self.rm_wg.compute_rm_score(batch)
                             batch = batch.union(reward_tensor)
                         
-                        # breakpoint()
                         print('not using reward model, rule instead')
                         # we combine with rule-based rm
                         reward_tensor = self.reward_fn(batch)
