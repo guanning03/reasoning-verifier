@@ -10,12 +10,14 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 from utils.utils import extract_model_shortname
-from utils.parser import extract_yes_no_answer
+from utils.parser import extract_yes_no_answer, extract_answer
+from utils.grader import math_equal
+
 os.makedirs('evaluations', exist_ok=True)
 
 # Examples 
 '''
-CUDA_VISIBLE_DEVICES=1 python evaluate_verifier.py --model_path="./models/Qwen2.5-1.5B-Instruct" --dataset="./benchmarks/math-verification" --tok_limit=8192 --split=test --test_n=1 --template="templates/verifier5.txt" --verification_type="yes_no" --post_truncate
+CUDA_VISIBLE_DEVICES=1 python evaluate_verifier.py --model_path="checkpoints/verifier-verl/qwen2.5-1.5b-instruct_math-v_ppo2/global_step_400/actor/huggingface" --dataset="./benchmarks/math-verification" --tok_limit=8192 --split=test --test_n=1 --template="templates/verifier4.txt" --verification_type="yes_no" --post_truncate
 '''
 
 parser = argparse.ArgumentParser()
@@ -53,10 +55,12 @@ if template is not None:
 
 print("Dataset:", dataset_short_name, "\nModel:", model_path)
 
-QUESTION_KEY = DATASET_KEYS[dataset_short_name]["question"]
-ANSWER_KEY = DATASET_KEYS[dataset_short_name]["answer"]
-extract_answer = RESPONSE_EXTRACTOR[dataset_short_name] if verification_type == 'scalar' else extract_yes_no_answer
-eq = RESPONSE_COMPARATOR[dataset_short_name]
+extract_answer_func = None
+
+if verification_type == 'scalar':
+    extract_answer_func = lambda x: extract_answer(x, data_name='math')
+elif verification_type == 'yes_no':
+    extract_answer_func = lambda x: extract_yes_no_answer(x)
 
 if dataset_short_name == 'math500-verification':
     dataset = load_from_disk(dataset_name)
@@ -71,7 +75,11 @@ elif dataset_short_name == 'math-verification':
     TEST_TEMPERATURE = 0.0
     MAX_TEST_SAMPLES = 1000
 else:
-    pass # TODO: add other datasets
+    dataset = load_from_disk(dataset_name)
+    TEST_N = 1
+    MAX_TOKENS = tok_limit
+    TEST_TEMPERATURE = 0.0
+    MAX_TEST_SAMPLES = 100
 
 print("Available splits in dataset:", dataset.keys()) 
 print("Available keys in dataset:", dataset[split].column_names)
@@ -81,39 +89,104 @@ if args.temperature is not None:
     TEST_TEMPERATURE = float(args.temperature)
 if args.test_n is not None:
     TEST_N = int(args.test_n)
+    
+def is_true(pred):
+    if not pred or pred in ['0', False, 'False', 'false', 'no', 'No', 'NO', 0, '0.0', '0.00']:
+        return 0
+    return 1
 
 def get_scores(ds, outputs, tokenizer_encode, save_file_name=None):
+    
     results = []
+    TP = FP = TN = FN = 0
     tot_tokens = 0
-    tot_pass_rate = 0
+    pass_rate = {}
+    pass_rate_w_verification = {}
+    
     for input, output in tqdm(zip(ds, outputs), total=len(ds), desc='Analysed responses'):
+        
+        # TODO: in this part, we assert there is only one output
+        assert len(output.outputs) == 1, "We haven't designed the code for multiple outputs"
+        
         truncated_responses = [resp.text for resp in output.outputs]
         prediction = [
-            extract_answer(truncated_resp)
+            extract_answer_func(truncated_resp)
             for truncated_resp in truncated_responses
         ]
+        verification_accuracy = [
+            math_equal(str(input['verification']), str(pred), timeout=True) 
+            for pred in prediction
+        ]
+        
         result = {
-            QUESTION_KEY: input[QUESTION_KEY] if not template else template.replace('<question>', input['original_problem']).replace('<response>', input['original_response']),
-            ANSWER_KEY: input[ANSWER_KEY],
+            "problem_idx": input['problem_idx'],
+            "response_idx": input['response_idx'],
+            'content_to_verify': input['content_to_verify'] if not template else template.replace('<question>', input['original_problem']).replace('<response>', input['original_response']),
+            'verification': input['verification'],
             "verification_thoughts": truncated_responses,  
             "verification_prediction": prediction,
             "tokens": sum([len(tokenizer_encode(truncated_resp)) for truncated_resp in truncated_responses]) / len(truncated_responses),
-            "verification_accuracy": [eq(str(input[ANSWER_KEY]), str(pred)) for pred in prediction],
+            "verification_accuracy": verification_accuracy,
             "original_gold": input['original_gold'],
             "original_prediction": input['original_prediction'],
         }
+
+        print("\nTypes in result dictionary:")
+        for key, value in result.items():
+            print(f"{key}: {type(value)} = {value}")
+        
         results.append(result)
         tot_tokens += result['tokens']
-        tot_pass_rate += sum(result['verification_accuracy']) / len(result['verification_accuracy'])
+        if result['verification']:
+            TP += sum(result['verification_accuracy'])
+            FP += len(result['verification_accuracy']) - sum(result['verification_accuracy'])
+        else:
+            TN += sum(result['verification_accuracy'])
+            FN += len(result['verification_accuracy']) - sum(result['verification_accuracy'])
         
+        if result['problem_idx'] not in pass_rate:
+            pass_rate[result['problem_idx']] = []
+        pass_rate[result['problem_idx']].append(
+            is_true(result['verification'])
+        )
+        
+        if result['problem_idx'] not in pass_rate_w_verification:
+            pass_rate_w_verification[result['problem_idx']] = []
+        if is_true(result['verification_prediction'][0]):
+            pass_rate_w_verification[result['problem_idx']].append(
+                is_true(result['verification'])
+            )
+    
+    avg_verification_tokens = tot_tokens / len(results)
+    accuracy = (TP + TN) / (TP + FP + TN + FN)
+    precision = TP / (TP + FP)
+    recall = TP / (TP + FN)
+    f1_score = 2 * precision * recall / (precision + recall)
+    
+    for problem_idx in pass_rate:
+        pass_rate[problem_idx] = sum(pass_rate[problem_idx]) / len(pass_rate[problem_idx])
+    for problem_idx in pass_rate_w_verification:
+        if problem_idx in pass_rate and len(pass_rate_w_verification[problem_idx]) > 0:
+            pass_rate_w_verification[problem_idx] = sum(pass_rate_w_verification[problem_idx]) / len(pass_rate_w_verification[problem_idx])
+        else:
+            pass_rate_w_verification[problem_idx] = pass_rate[problem_idx]
+    
+    avg_pass_rate = sum(pass_rate.values()) / len(pass_rate)
+    avg_pass_rate_w_verification = sum(pass_rate_w_verification.values()) / len(pass_rate)
+    
     if save_file_name is not None:
         with open(save_file_name, 'w') as f:
             json.dump(results, f, indent=4)
     
     return {
-        'avg_tokens': tot_tokens / len(results),
-        'avg_verification_accuracy': tot_pass_rate / len(results),
-    } # TODO: add various metrics when required
+        'avg_verification_tokens': avg_verification_tokens,
+        'accuracy': accuracy,
+        'precision': precision,
+        'recall': recall,
+        'f1-score': f1_score,
+        'avg_pass_rate': avg_pass_rate,
+        'avg_pass_rate_w_verification': avg_pass_rate_w_verification
+    }
 
 def evaluate_model():
     test_prompts = []
@@ -123,7 +196,7 @@ def evaluate_model():
     test_ds = dataset[split].shuffle(seed=0).select(range(min(MAX_TEST_SAMPLES, len(dataset[split]))))
     
     for x in test_ds:
-        prompt = x[QUESTION_KEY] if not template else template.replace('<question>', x['original_problem']).replace('<response>', x['original_response'])
+        prompt = x['content_to_verify'] if not template else template.replace('<question>', x['original_problem']).replace('<response>', x['original_response'])
         prompt_tokens = model.llm_engine.tokenizer.tokenizer.encode(prompt)
         test_prompts.append(prompt_tokens)
     

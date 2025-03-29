@@ -14,8 +14,8 @@ from torch.serialization import add_safe_globals
 
 ### Params
 os.environ['CUDA_VISIBLE_DEVICES'] = '1'
-actor_dir = 'checkpoints/verifier-verl/qwen2.5-1.5b-instruct_math-v_ppo/global_step_600/actor'
-world_size = 4
+actor_dir = 'checkpoints/verifier-verl/qwen2.5-1.5b-instruct_math-v_ppo2/global_step_400/actor'
+world_size = 8
 
 def is_fsdp_tensor(tensor):
     return hasattr(tensor, '_local_metadata')

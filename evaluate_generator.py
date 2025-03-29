@@ -34,7 +34,7 @@ CUDA_VISIBLE_DEVICES=0 python evaluate_generator.py --model_path="./models/Qwen2
 '''
 '''
 CUDA_VISIBLE_DEVICES=7 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH_train_test_split" --tok_limit=3072 --split=train --test_n=2 --template="templates/Qwen_MATH_0shot.txt" --temperature=0.6
-CUDA_VISIBLE_DEVICES=4 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH_train_test_split" --tok_limit=3072 --split=test --test_n=2 --template="templates/Qwen_MATH_0shot.txt" --temperature=0.6
+CUDA_VISIBLE_DEVICES=1 python evaluate_generator.py --model_path="./models/Qwen2.5-Math-1.5B" --dataset="./benchmarks/MATH_train_test_split" --tok_limit=3072 --split=test --test_n=64 --template="templates/Qwen_MATH_0shot.txt" --temperature=0.6
 '''
 
 parser = argparse.ArgumentParser()
@@ -170,8 +170,14 @@ experiment_name = f"{dataset_short_name}_{extract_model_shortname(model_path)}_{
 
 def evaluate_model():
     test_prompts = []
-    model = LLM(model_path, tokenizer=model_path, gpu_memory_utilization=0.9, 
-                tensor_parallel_size=1, max_model_len = MAX_TOKENS, swap_space=80)    
+    model = LLM(
+        model_path, 
+        tokenizer=model_path, 
+        gpu_memory_utilization=0.9, 
+        tensor_parallel_size=1, 
+        max_model_len=MAX_TOKENS, 
+        swap_space=80
+    )    
     
     test_ds = dataset[split].shuffle(seed=0).select(range(min(MAX_TEST_SAMPLES, len(dataset[split]))))
     
